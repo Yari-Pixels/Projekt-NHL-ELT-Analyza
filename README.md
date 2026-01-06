@@ -110,21 +110,6 @@ SELECT * FROM opta_data_ice_hockeysample_tapir_opossum.ice_hockey.fixtures;
 SELECT * FROM table_staging
 ORDER BY round;
 
-CREATE OR REPLACE TABLE dim_team AS (
-    SELECT DISTINCT
-        home_uuid AS id_team,
-        home AS name,
-        home_short AS team_short
-    FROM table_staging
-);
-
-CREATE OR REPLACE TABLE dim_venue AS (
-    SELECT DISTINCT
-        venue_uuid AS id_venue,
-        venue AS name
-    FROM table_staging
-);
-
 CREATE OR REPLACE TABLE dim_season AS (
     SELECT DISTINCT
         season_uuid AS id_season,
