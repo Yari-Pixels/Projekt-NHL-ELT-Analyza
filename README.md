@@ -100,13 +100,6 @@ Dimenzia `dim_team` je navrhnutá tak, aby uchovávala informácie o tímoch zú
 Tabuľka `dim_venue` obsahuje iba názov štadióna, tak isto by mohla byť scd `SCD Typ 2` v prípade zmeny názvu, ak by sme sledovali viac sezón. V našom modeli je `SCD Typ 0`.
 
 ```sql
-CREATE OR REPLACE TABLE dim_season AS (
-    SELECT DISTINCT
-        season_uuid AS id_season,
-        season AS season
-    FROM table_staging
-);
-
 CREATE OR REPLACE SCHEMA TAPIR_DB.projekt;
 USE WAREHOUSE TAPIR_WH;
 USE SCHEMA projekt;
