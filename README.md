@@ -7,9 +7,9 @@ Cieľom tohto repozitáru je analyzovať výsledky sezóny 2021/22 NHL. Pracujem
 V našom projekte analyzujeme dáta o výsledkoch zápasov sezóny 2021/22 zámorskej NHL. Cieľom je analyzovať:
 - Časy zápasov
 - Výsledky zápasov
-- Gólovú produktivitu týmov
+- Gólovú produktivitu tímov
   
-Zdrojové dáta pochádzajú zo snowflake dataset-u dostupného [tu](https://app.snowflake.com/marketplace/listing/GZSVZCB6A7). Dáta sú uložené v denormalizovanej tabuľke, ktorá obsahuje údaje o:
+Zdrojové dáta pochádzajú zo snowflake datasetu dostupného [tu](https://app.snowflake.com/marketplace/listing/GZSVZCB6A7). Dáta sú uložené v denormalizovanej tabuľke, ktorá obsahuje údaje o:
 - `game` - údaje o zápase
 - `home / away` - údaje o zúčastnených tímoch
 - `country` - krajina súťaže
@@ -21,7 +21,7 @@ Zdrojové dáta pochádzajú zo snowflake dataset-u dostupného [tu](https://app
 ### **1.1 Dátová architektúra**
 
 ### **OBT diagram**
-Surové dáta sú uložené v one big table modeli, ktorý je znázornený na **diagrame**:
+Surové dáta sú uložené ako model One Big Table, ktorý je znázornený na **diagrame**:
 
 <p align="center">
   <img src="./img/one_big_table_schema.png" alt="ERD Schema">
@@ -34,7 +34,7 @@ Surové dáta sú uložené v one big table modeli, ktorý je znázornený na **
 
 Pre projekt sme si vybrali star schému (Kimball), pretože nám prišla vhodnejšia na uchovanie našich pôvodných dát a ich následnú analýzu.
 **`fact_game`**, ktorá je prepojená s nasledujúcimi 9 dimenziami:
-- **`dim_country`**: Obsahuje údaje o štáte.
+- **`dim_team`**: Obsahuje údaje o tímoch.
 - **`dim_region`**: Obsahuje údaje o regióne.
 - **`dim_competition`**: Obsahuje údaje o súťaži.
 - **`dim_round`**: Obsahuje údaje o kolách (pre-season, regular, play-off, finale).
@@ -97,7 +97,7 @@ CREATE OR REPLACE TABLE dim_venue AS (
 ```
 Dimenzia `dim_team` je navrhnutá tak, aby uchovávala informácie o tímoch zúčastnených v lige, ich názvoch a skratkách. V našom modeli je navrhnutá ako `SCD Typ 0`. Ak by sme chceli sledovať zmeny naprieč sezónami, použili by sme `SCD Typ 2` - aby sme sledovali zmenu názvu tímu.
 
-Tabuľka `dim_venue` obsahuje iba názov štadióna, tak isto by mohla byť scd `SCD Typ 2` v prípade zmeny názvu, ak by sme sledovali viac sezón. V našom modeli je `SCD Typ 0`.
+Tabuľka `dim_venue` obsahuje iba názov štadióna, tak isto by mohla byť `SCD Typ 2` v prípade zmeny názvu, ak by sme sledovali viac sezón. V našom modeli je `SCD Typ 0`.
 
 ```sql
 CREATE OR REPLACE SCHEMA TAPIR_DB.projekt;
@@ -222,7 +222,7 @@ CREATE OR REPLACE TABLE fact_game AS (
 );
 ```
 
-Tabuľka faktov prepája všetky dimenzie, kľúčové metriky sú góly domáceho a hosťujúceho tímu. Pomocou window function `SUM() OVER()` sme pridali údaje o percente vyhraných hier pre každý tím v jeho danej pozícií. Pridali sme aj údaj o domácom víťazstve pomocou `CASE WHEN`. Nakoľko analyzujeme výsledky hraných zápasov, tak sme pomocou podmienky odfiltrovali neodohrané zápasy. Nakoniec sme vyčistili staging tabuľku príkazom `DROP TABLE`.
+Tabuľka faktov prepája všetky dimenzie, kľúčové metriky sú góly domáceho a hosťujúceho tímu. Pomocou window function `SUM() OVER()` sme pridali údaje o percente vyhraných zápasov pre každý tím v jeho danej pozícii. Pridali sme aj údaj o domácom víťazstve pomocou `CASE WHEN`. Nakoľko analyzujeme výsledky hraných zápasov, tak sme pomocou podmienky odfiltrovali neodohrané zápasy. Nakoniec sme vyčistili staging tabuľku príkazom `DROP TABLE`.
 
 ```sql
 DROP TABLE table_staging;
@@ -255,7 +255,7 @@ SELECT
     fg.away_score AS "Goals Scored By Away Team"
 FROM fact_game fg;
 ```
-Heat mapa nám ukazuje najčastejšie skóre zápasov. Môžme vidieť, že zápasy sú bohaté na góly s najčastejším počtom gólov 3 až 5. A najbežnejšie skóre skóre je 2-3 pre vonkajší tím.
+Heat mapa nám ukazuje najčastejšie skóre zápasov. Môžeme vidieť, že zápasy sú bohaté na góly s najčastejším počtom gólov 3 až 5. A najbežnejšie skóre je 2-3 pre vonkajší tím.
 
 ---
 ### Graf 3 - Vzťah medzi víťazstvami a inkasovanými gólmi
@@ -271,7 +271,7 @@ WHERE dr.round = 'Regular Season'
 GROUP BY "Team"
 ORDER BY "Goals Against" ASC;
 ```
-V ďalšom grafe sledujeme závislosť dobrej defenzívy od víťazstiev. Logicky môžme vidieť, že tímy, ktoré dostávajú menej gólov, viac vyhrávajú. Zaujímavé je, že žiadny z tímov, ktorý mal viac než 38 výhier nedostal viac ako 260 gólov. V tejto skupine tímov počet víťazstiev a inkasovaných gólov nemal tak silnú súvislosť.
+V ďalšom grafe sledujeme závislosť dobrej defenzívy od víťazstiev. Logicky môžeme vidieť, že tímy s nižším počtom inkasovaných gólov dosahujú vyšší počet víťazstiev. Zaujímavé je, že žiadny z tímov, ktorý mal viac než 38 výhier nedostal viac ako 260 gólov. V tejto skupine tímov počet víťazstiev a inkasovaných gólov nemal tak silnú súvislosť.
 
 ---
 ### Graf 4 - Množstvo zápasov odohraných v jednotlivých časoch podľa EST
@@ -283,7 +283,7 @@ FROM fact_game fg
 JOIN dim_time dt ON dt.id_time = fg.id_time
 GROUP BY "Match Start";
 ```
-V štvrtom grafe sa zameriava me na časy začiatkov zápasov podľa východného štandardného času `EST` `UTC -5`. Najviac zápasov začína o ôsmej hodine večer. Výrazne vyšší počet zápasov sa začína v celú hodinu než v polhodine.
+V štvrtom grafe sa zameriavame na časy začiatkov zápasov podľa východného štandardného času `EST` `UTC -5`. Najviac zápasov začína o ôsmej hodine večer. Výrazne vyšší počet zápasov sa začína v celú hodinu než v polhodine.
 
 ---
 ### Graf 5 - Góly skórované prvým, druhým, posledným tímom a ligový priemer počas základnej časti
